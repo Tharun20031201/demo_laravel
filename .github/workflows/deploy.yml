@@ -27,31 +27,23 @@ jobs:
 
             echo "Starting deployment..."
 
-            # Go to project directory
-            cd /home/${{ secrets.SSH_USERNAME }}/public_html
+            cd ~/public_html
 
             echo "Pulling latest code..."
-            git fetch origin main
             git reset --hard origin/main
 
-            echo "Installing Composer dependencies..."
+            echo "Installing dependencies..."
             composer install --no-dev --optimize-autoloader --no-interaction
 
-            echo "Clearing Laravel cache..."
-            php artisan config:clear || true
-            php artisan cache:clear || true
-            php artisan route:clear || true
-            php artisan view:clear || true
+            echo " Clearing cache..."
+            php artisan optimize:clear || true
 
-            echo "🛠 Running migrations..."
+            echo " Running migrations..."
             php artisan migrate --force || true
 
-            echo "Rebuilding cache..."
+            echo "Caching application..."
             php artisan config:cache || true
             php artisan route:cache || true
             php artisan view:cache || true
 
-            echo "Bringing app live..."
-            php artisan up || true
-
-            echo "Deployment completed successfully!"
+            echo "Deployment completed!"
