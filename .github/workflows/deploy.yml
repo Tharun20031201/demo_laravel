@@ -1,0 +1,57 @@
+name: Deploy Laravel to cPanel
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to cPanel via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            set -e
+
+            echo "Starting deployment..."
+
+            # Go to project directory
+            cd /home/${{ secrets.SSH_USERNAME }}/public_html
+
+            echo "Pulling latest code..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "Installing Composer dependencies..."
+            composer install --no-dev --optimize-autoloader --no-interaction
+
+            echo "Clearing Laravel cache..."
+            php artisan config:clear || true
+            php artisan cache:clear || true
+            php artisan route:clear || true
+            php artisan view:clear || true
+
+            echo "🛠 Running migrations..."
+            php artisan migrate --force || true
+
+            echo "Rebuilding cache..."
+            php artisan config:cache || true
+            php artisan route:cache || true
+            php artisan view:cache || true
+
+            echo "Bringing app live..."
+            php artisan up || true
+
+            echo "Deployment completed successfully!"
