@@ -1,4 +1,4 @@
-name: Deploy Laravel to cPanel
+name: Deploy Laravel to cPanel (FTP)
 
 on:
   push:
@@ -15,35 +15,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to cPanel via SSH
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Install dependencies
+        run: |
+          composer install --no-dev --optimize-autoloader
+
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          script: |
-            set -e
-
-            echo "Starting deployment..."
-
-            cd ~/public_html
-
-            echo "Pulling latest code..."
-            git reset --hard origin/main
-
-            echo "Installing dependencies..."
-            composer install --no-dev --optimize-autoloader --no-interaction
-
-            echo " Clearing cache..."
-            php artisan optimize:clear || true
-
-            echo " Running migrations..."
-            php artisan migrate --force || true
-
-            echo "Caching application..."
-            php artisan config:cache || true
-            php artisan route:cache || true
-            php artisan view:cache || true
-
-            echo "Deployment completed!"
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTP_PORT }}
+          protocol: ftp
+          local-dir: ./
+          server-dir: /demoo
+          dangerous-clean-slate: false
